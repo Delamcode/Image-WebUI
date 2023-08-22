@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Gen WebUI</title>
+    <!-- Add Bootstrap CSS -->
+    <link rel="icon" href="https://cdn.discordapp.com/attachments/913760038361890867/931879891417317386/show.png">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            margin: 20px;
+        }
+        .container-box {
+            background-color: #ffffff;
+            border: 1px solid #e2e2e2;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-family: "Roboto", sans-serif;
+            font-size: 48px;
+            margin-bottom: 30px;
+        }
+        #output {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .loading {
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        /* --------- */
+
+        .image-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            border: 1px solid #e2e2e2;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        .image-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .image-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+        .select-button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .select-button:hover {
+            background-color: #0056b3;
+        }
+        /* Dark mode styles */
+        .image-popup.dark-mode {
+            background-color: #333333;
+            border-color: #555555;
+            color: #f8f9fa;
+        }
+
+
+        /* Styling for the cancel button */
+        .cancel-button {
+            padding: 5px 10px;
+            background-color: #6c757d;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .cancel-button:hover {
+            background-color: #545b62;
+        }
+
+        /* --------- */
+    
+        /* Dark mode styles */
+        body.dark-mode {
+            background-color: #333333;
+            color: #f8f9fa;
+        }
+        body.dark-mode .container-box {
+            background-color: #444444;
+            border-color: #555555;
+            color: #f8f9fa;
+        }
+        body.dark-mode h1 {
+            color: #f8f9fa;
+        }
+        body.dark-mode .form-control,
+        body.dark-mode .btn {
+            background-color: #555555;
+            color: #f8f9fa;
+            border-color: #666666;
+        }
+        body.dark-mode .form-control::placeholder {
+            color: #f8f9fa;
+            opacity: 0.6;
+        }
+		.image-popup.dark-mode {
+            background-color: #444444;
+            border-color: #555555;
+            color: #f8f9fa;
+		}
+        #darkModeToggle.dark-mode {
+            background-color: #ffffff;
+            border-color: #666666;
+        }
+    
+        /* New styles for dark mode toggle button */
+        #darkModeToggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #555555;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid #e2e2e2;
+        }
+        #darkModeToggle div  {
+            width: 2px;
+            height: 2px;
+        }
+        /* Adjustments for smaller screens */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                margin: 10px;
+            }
+            .container-box {
+                padding: 20px;
+            }
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="dark-mode">
+    <div class="container container-box">
+        <h1 class="mt-5">Image Gen WebUI</h1>
+        <form method="POST" id="imageForm" class="mt-3">
+            <div class="form-group">
+                <label for="prompt">Enter Prompt:</label>
+                <input type="text" name="prompt" id="prompt" class="form-control" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="count">Number of Images (n):</label>
+                <input type="number" name="count" id="count" min="1" max="10" value="1" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="size_ratio">Select Ratio:</label>
+                <select id="size_ratio" name="size_ratio" class="form-control">
+                    <option value="1:1">1:1</option>
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="3:2">3:2</option>
+                    <option value="2:3">2:3</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="style">Select Style:</label>
+                <select id="style" name="style" class="form-control">
+                    <option value="none">None</option>
+                    <option value="anime style">Anime</option>
+                    <option value="cyberpunk style">Cyberpunk</option>
+                    <option value="detailed">Detailed</option>
+                    <option value="medieval">Medieval</option>
+                    <option value="christmas style">Christmas</option>
+                    <option value="portrait">Portrait</option>
+                    <option value="professional studio">Professional Studio</option>
+                    <option value="high quality artrealistic, highly detailed, art-station, trending, masterpiece, ultra render realistic n-9,, 4k , 8k, 16k, 20k">High-Quality Art</option>
+                    <option value="3d render">3D Render</option>
+                    <option value="soviet cartoon style">Soviet Cartoon</option>
+                    <option value="cartoon style">Cartoon</option>
+                    <option value="pencil drawing">Pencil Drawing</option>
+                    <option value="mosaic">Mosaic</option>
+                    <option value="christian icon">Christian Icon</option>
+                    <option value="oil painting">Oil Painting</option>
+                    <option value="renaissance style">Renaissance</option>
+                    <option value="classicism style">Classicism</option>
+                    <option value="khokhloma style">Khokhloma</option>
+                    <option value="picasso style">Picasso</option>
+                    <option value="gonharova style">Gonharova</option>
+                    <option value="malevich style">Malevich</option>
+                    <option value="aivazovsky style">Aivazovsky</option>
+                    <option value="kandinsky style">Kandinsky</option>
+                    <option value="dark, scary, horror">Dark</option>
+                    <!-- Add more style options as needed -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="model">Select Model:</label>
+                <select id="model" name="model" class="form-control">
+                    <option value="kandinsky-c">ChimeraKandinsky</option>
+                    <option value="kandinsky-r">ReplicateKandinsky</option>
+                    <option value="dalle">Dall-E</option>
+                    <option value="sd15">Stable Diffusion 1.5</option>
+                    <option value="sd21">Stable Diffusion 2.1</option>
+                    <option value="if">DeepFloyd IF</option>
+                    <option value="sdxl">SDXL</option>
+                    <option value="bing">Bing Image Creator</option>
+                    <option value="dreamshaper">Dreamshaper</option>
+                    <option value="midjourney">ChimeraJourney</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="key">Key (optional):</label>
+                <input type="text" name="key" id="key" class="form-control">
+            </div>
+        
+            <div class="btn-group d-flex justify-content-center">
+                <button type="submit" class="btn btn-primary mr-2">Generate Images</button>
+                <button type="button" onclick="handleDownload()" class="btn btn-primary">Download</button>
+            </div>
+        </form>
+
+        <div id="output"></div>
+        <div class="loading" id="loadingMessage"></div>
+    </div>
+
+    <div id="darkModeToggle" onclick="toggleDarkMode()">
+        <svg
+            alt="DM" 
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path
+                d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8V16Z"
+                fill="currentColor"
+            />
+            <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM12 4V8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16V20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4Z"
+                fill="currentColor"
+            />
+        </svg>
+    </div>
+
+    <!-- Add Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById("imageForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const promptInput = document.getElementById("prompt").value;
+            const styleInput = document.getElementById("style").value;
+            let prompt;
+            if (styleInput === "none") {
+                prompt = promptInput;
+            } else {
+                prompt = promptInput + ", " + styleInput + " style";
+            }
+            const key = document.getElementById("key").value;
+            const count = document.getElementById("count").value;
+            const sizeRatio = document.getElementById("size_ratio").value;
+            const model = document.getElementById("model").value;
+            const outputDiv = document.getElementById("output");
+            const loadingMessageDiv = document.getElementById("loadingMessage");
+
+            outputDiv.innerHTML = "";
+            loadingMessageDiv.textContent = "Generating images, please wait...";
+
+            fetch("/api", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: "prompt=" + encodeURIComponent(prompt) + "&count=" + encodeURIComponent(count) + "&size_ratio=" + encodeURIComponent(sizeRatio) + "&model=" + encodeURIComponent(model) + "&key=" + encodeURIComponent(key)
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    loadingMessageDiv.textContent = "";
+                    if ("error" in data) {
+                        console.error("Error: " + data["error"]);
+                        showErrorMessage("Error: " + data["error"] + " - Server Side Error")
+                        return
+                    }
+                    if ("base64" in data) {
+                        data["quarter_images_base64"].forEach((quarterBase64) => {
+                            const img = document.createElement("img");
+                            img.src = "data:image/png;base64," + quarterBase64;
+                            img.style.maxWidth = "100%";
+                            img.style.marginBottom = "20px";
+                        
+                            const imgContainer = document.createElement("div");
+                            imgContainer.style.marginRight = "20px";
+                            imgContainer.style.marginBottom = "20px";
+                            imgContainer.style.width = "35%"
+                            imgContainer.style.height = "35%"
+                            imgContainer.appendChild(img);
+                        
+                            outputDiv.appendChild(imgContainer);
+                        });
+                    }
+                    else {
+                        data.forEach((image) => {
+                            const img = document.createElement("img");
+                            img.src = image.url;
+                            img.style.maxWidth = "100%";
+                            img.style.marginBottom = "20px";
+                            const imgContainer = document.createElement("div");
+                            imgContainer.style.marginRight = "20px";
+                            imgContainer.style.marginBottom = "20px";
+                            imgContainer.style.width = "35%"
+                            imgContainer.style.height = "35%"
+                            imgContainer.appendChild(img);
+                            outputDiv.appendChild(imgContainer);
+                        });
+                    }
+                })
+                .catch((error) => {
+                    loadingMessageDiv.textContent = "";
+                    console.error("Error: " + error);
+                    showErrorMessage("Error: " + error + " - Client Side Error")
+                });
+        });
+
+        // Function to toggle dark mode
+        function toggleDarkMode() {
+            const body = document.body;
+            body.classList.toggle("dark-mode");
+            // Toggle dark mode styles for the image popup
+            const popup = document.querySelector(".image-popup");
+            if (popup) {
+                popup.classList.toggle("dark-mode");
+            }
+			const darkModeToggle = document.getElementById("darkModeToggle");
+            darkModeToggle.classList.toggle("dark-mode");
+        }
+
+        function handleDownload() {
+            const images = document.getElementById("output").querySelectorAll("img");
+        
+            if (images.length > 0) {
+                const popup = document.createElement("div");
+                popup.classList.add("image-popup");
+                const isDarkMode = document.body.classList.contains("dark-mode");
+                if (isDarkMode) {
+                    popup.classList.add("dark-mode");
+                }
+        
+                images.forEach((image, index) => {
+                    const imageContainer = document.createElement("div");
+                    imageContainer.classList.add("image-container");
+        
+                    const imagePreview = document.createElement("img");
+                    imagePreview.src = image.src;
+                    imagePreview.alt = `Image ${index + 1}`;
+                    imagePreview.classList.add("image-preview");
+        
+                    const selectButton = document.createElement("button");
+                    selectButton.textContent = "Download";
+                    selectButton.classList.add("select-button");
+                    selectButton.addEventListener("click", () => {
+                        const filename = `downloaded-image-${index + 1}.jpg`;
+                        downloadImage(image.src, filename);
+                    });
+        
+                    imageContainer.appendChild(imagePreview);
+                    imageContainer.appendChild(selectButton);
+                    popup.appendChild(imageContainer);
+                });
+
+                // Add cancel button
+                const cancelButton = document.createElement("button");
+                cancelButton.textContent = "Cancel";
+                cancelButton.classList.add("cancel-button");
+                cancelButton.style.marginTop = "10px";
+                cancelButton.addEventListener("click", () => {
+                    popup.remove();
+                });
+                popup.appendChild(cancelButton);
+        
+                document.body.appendChild(popup);
+            } else {
+                // Show error banner if no image to download
+                showErrorMessage("Nothing to download. Generate images first.");
+                console.error("Nothing to download. Generate images first.");
+            }
+        }
+        
+        // Function to download the selected image
+        function downloadImage(imageSrc, filename) {
+            const downloadLink = document.createElement("a");
+            downloadLink.href = imageSrc;
+            downloadLink.download = filename;
+            downloadLink.click();
+        }
+
+        // Function to display error messages
+        function showErrorMessage(message) {
+            const errorMessage = document.createElement("div");
+            errorMessage.textContent = message;
+            errorMessage.classList.add("alert", "alert-danger", "mt-3");
+            document.getElementById("output").appendChild(errorMessage);
+
+            // Remove the error message after a few seconds (10 seconds in this example)
+            setTimeout(function() {
+                errorMessage.remove();
+            }, 10*1000);
+        }
+    </script>
+
+    <!-- Footer -->
+    <footer class="text-center mt-5">
+        <p>
+            <a href="https://xr7.me" target="_blank">Made by XR7'</a>
+			<p></p>
+            <a href="https://discord.gg/cNXUrgCDw9" target="_blank">Forked by @delamcode</a>
+			<p></p>
+			<a href="https://discord.gg/TtQvbVcq7q" target="_blank">Thanks to ChimeraAI</a>
+        </p>
+    </footer>
+</body>
+</html>
