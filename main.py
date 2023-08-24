@@ -243,6 +243,41 @@ def api():
                     if prediction_data["status"] == "failed":
                         return jsonify({"error": "Model failed generating."})
                     time.sleep(2)
+            elif model == "deliberate":
+                size = size_ratios[size_ratio]
+                width, height = size
+                data = {
+                    "version": "6197db9cdf865a7349acaf20a7d20fe657d9c04cc0c478ec2b23565542715b95",
+                    "input": {
+                        "prompt": prompt,
+                        "num_outputs": n,
+                        "width": int(width),
+                        "height": int(height),
+                    }
+                }
+                headers = {
+                    "Authorization": f"Token {REPLICATE_KEY}",
+                    "Content-Type": "application/json"
+                }
+            
+                response = requests.post("https://api.replicate.com/v1/predictions", headers=headers, json=data)
+                response_data = response.json()
+                print(response_data)
+                prediction_id = response_data["id"]
+                prediction_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
+            
+                while True:
+                    prediction_response = requests.get(prediction_url, headers=headers)
+                    prediction_data = prediction_response.json()
+                    if prediction_data["status"] == "succeeded":
+                        output = prediction_data["output"]
+                        dict = []
+                        for url in output:
+                            dict.append({"url": url})
+                        return dict
+                    if prediction_data["status"] == "failed":
+                        return jsonify({"error": "Model failed generating."})
+                    time.sleep(2)
             else:
                 return jsonify({"error": "Invalid model name"})
         except Exception as e:
