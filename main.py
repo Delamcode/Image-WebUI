@@ -15,7 +15,7 @@ load_dotenv()
 
 # Replace "your API KEY from `/key get` Discord command" with your actual OpenAI API key
 openai.api_key = os.environ['OPENAI_API_KEY']
-openai.api_base = "https://chimeragpt.adventblocks.cc/api/v1"  # Corrected API Base URL
+openai.api_base = "https://api.naga.ac/v1"  # Corrected API Base URL
 BING_KEY = os.environ['BING_KEY']
 BING_KEY_SRC = os.environ['BING_KEY_2']
 REPLICATE_KEY = os.environ['REPLICATE_KEY']
